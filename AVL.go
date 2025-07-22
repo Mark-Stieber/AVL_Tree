@@ -5,10 +5,6 @@ import (
 	"slices"
 )
 
-//	Starting With a Binary Search Tree
-
-//const LEAF_LEN int = 2
-
 type AVL struct {
 	root *AVL_node
 }
@@ -43,6 +39,7 @@ func balanceFactor(root *AVL_node) int {
 	return getHeight(root.right) - getHeight(root.left)
 }
 
+// Right Rotation
 func rotateRight(root *AVL_node) *AVL_node {
 	newroot := root.left
 	root.left = root.left.right
@@ -58,6 +55,7 @@ func rotateRight(root *AVL_node) *AVL_node {
 	return newroot
 }
 
+// Left Rotation
 func rotateLeft(root *AVL_node) *AVL_node {
 	newroot := root.right
 	root.right = root.right.left
@@ -73,7 +71,7 @@ func rotateLeft(root *AVL_node) *AVL_node {
 	return newroot
 }
 
-func reBalance(tree *AVL, root *AVL_node) *AVL_node {
+func reBalance(root *AVL_node) *AVL_node {
 
 	// 4 cases LL, RR, LR, RL
 	// LL
@@ -105,35 +103,38 @@ func reBalance(tree *AVL, root *AVL_node) *AVL_node {
 	return nil
 }
 
-func insertAVL(tree *AVL, root *AVL_node, n *AVL_node) {
+func insertAVL(tree *AVL, root *AVL_node, newNode *AVL_node) {
 	if tree.root == nil {
-		tree.root = n
+		tree.root = newNode
 		return
 	}
 
-	if n.value == root.value || n.value == 0 {
+	if newNode.value == root.value || newNode.value == 0 {
 		return
 	}
 
-	if n.value < root.value {
+	if newNode.value < root.value {
 		if root.left != nil {
-			insertAVL(tree, root.left, n)
+			insertAVL(tree, root.left, newNode)
 		} else {
-			n.parent = root
-			root.left = n
+			newNode.parent = root
+			root.left = newNode
 		}
 	} else {
 		if root.right != nil {
-			insertAVL(tree, root.right, n)
+			insertAVL(tree, root.right, newNode)
 		} else {
-			n.parent = root
-			root.right = n
+			newNode.parent = root
+			root.right = newNode
 		}
 	}
 
+	// Correcting Height and Rebalencing
 	root.height = 1 + max(getHeight(root.right), getHeight(root.left))
 	newparent := root.parent
-	newroot := reBalance(tree, root)
+	newroot := reBalance(root)
+
+	// Correcting Parents
 	if newroot != nil {
 		if newroot.left == tree.root || newroot.right == tree.root {
 			tree.root = newroot
@@ -192,6 +193,7 @@ func deleteAVL(tree *AVL, root *AVL_node, nval int) *AVL_node {
 
 		} else {
 			// If both left and right have children
+			// Next inorder becomes the root
 			newroot = nextInorderAVL(root)
 			root.value = newroot.value
 			root.right = deleteAVL(tree, root.right, newroot.value)
@@ -204,8 +206,10 @@ func deleteAVL(tree *AVL, root *AVL_node, nval int) *AVL_node {
 		root.right = deleteAVL(tree, root.right, nval)
 	}
 
+	// Correcting Height and Rebalencing
 	root.height = 1 + max(getHeight(root.right), getHeight(root.left))
-	newroot := reBalance(tree, root)
+	newroot := reBalance(root)
+	// Correcting Parents
 	if newroot != nil {
 		if newroot.left == tree.root || newroot.right == tree.root {
 			tree.root = newroot
@@ -216,49 +220,14 @@ func deleteAVL(tree *AVL, root *AVL_node, nval int) *AVL_node {
 	return root
 }
 
-/*
-func inorderPrint(root *BST_node) {
-	if root != nil {
-		inorderPrint(root.left)
-		fmt.Print(root.value, " ")
-		if root.left == nil {
-			fmt.Print("nil ")
-		} else {
-			fmt.Print(root.left.value, " ")
-		}
-		if root.right == nil {
-			fmt.Print("nil | ")
-		} else {
-			fmt.Print(root.right.value, " | ")
-		}
+//_____Testing Functions_____//
 
-		inorderPrint(root.right)
-	}
-}
-
-func inorderCheck(root *BST_node) {
-	if root != nil {
-		inorderCheck(root.left)
-		if root.left != nil {
-			if root.left.value >= root.value {
-				panic("Left Child Error")
-			}
-		}
-		if root.right != nil {
-			if root.right.value <= root.value {
-				panic("Right Child Error")
-			}
-		}
-
-		inorderCheck(root.right)
-	}
-}
-*/
-
+// Random Max Value
 const RAND_RANGEAVL = 100000
 
+// Insertions Sort Helper Function for Tracking nodes
+// for randomInsert and randomDelete
 func insertSortArray(ary *[]int, val int) {
-	//func Insert[S ~[]E, E any](s S, i int, v ...E) S
 	if len(*ary) == 0 {
 		(*ary) = append((*ary), val)
 		return
@@ -297,4 +266,28 @@ func randomDeleteAVL(tree *AVL, ary *[]int, itr int) {
 			inorderCheck(tree.root)
 		}
 	}
+}
+
+// Adding nodes to Slice: ary inorder
+func inorderArrayAVL(root *AVL_node, ary *[]int) {
+	if root != nil {
+		inorderArrayAVL(root.left, ary)
+		(*ary) = append((*ary), root.value)
+		inorderArrayAVL(root.right, ary)
+	}
+}
+
+// keeping track of nodes making sure nothing is lost
+//
+// Nodeary is the Slice that should be used with both
+// the randomInsert and randomDelete Functions
+func nodeTrackerAVL(tree *AVL, nodeary *[]int) bool {
+	checkary := []int{}
+	inorderArrayAVL(tree.root, &checkary)
+	for i := 0; i < len(checkary); i++ {
+		if checkary[i] != (*nodeary)[i] {
+			return false
+		}
+	}
+	return true
 }
